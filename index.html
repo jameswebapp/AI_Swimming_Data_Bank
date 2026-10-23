@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Maryland Swimming Data Bank</title>
+<meta name="description" content="Search Maryland LSC swimmers, personal bests and meet results — 2023-2027.">
+<style>
+  :root{
+    --bg:#0a1622; --bg2:#0e1f31; --card:#12293f; --card2:#17334e;
+    --line:#1e3d5a; --txt:#e8f1f8; --dim:#93a9bd; --acc:#2dd4ee; --acc2:#38e0b0;
+    --gold:#ffc44d; --radius:14px;
+    --shadow:0 6px 24px rgba(0,0,0,.35);
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{
+    background:linear-gradient(180deg,var(--bg) 0%,var(--bg2) 100%);
+    color:var(--txt); min-height:100vh;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  }
+  a{color:var(--acc);text-decoration:none}
+  header{
+    position:sticky;top:0;z-index:20;backdrop-filter:blur(10px);
+    background:rgba(10,22,34,.82);border-bottom:1px solid var(--line);
+  }
+  .bar{max-width:960px;margin:0 auto;padding:12px 16px;display:flex;align-items:center;gap:12px}
+  .logo{font-size:22px}
+  .title{font-weight:700;font-size:17px;letter-spacing:.2px;white-space:nowrap}
+  .title small{display:block;font-weight:500;font-size:11px;color:var(--dim);letter-spacing:.4px}
+  main{max-width:960px;margin:0 auto;padding:18px 16px 64px}
+  .view{animation:vin .22s ease both}
+  @keyframes vin{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  /* search */
+  .searchwrap{position:relative;margin:8px 0 4px}
+  .searchbox{
+    width:100%;padding:15px 16px 15px 46px;font-size:17px;color:var(--txt);
+    background:var(--card);border:1px solid var(--line);border-radius:var(--radius);outline:none;
+    transition:border-color .15s ease, box-shadow .15s ease;
+  }
+  .searchbox:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(45,212,238,.18)}
+  .searchwrap .icon{position:absolute;left:15px;top:50%;transform:translateY(-50%);opacity:.65;font-size:18px}
+  .dropdown{
+    position:absolute;left:0;right:0;top:calc(100% + 6px);z-index:30;
+    background:var(--card2);border:1px solid var(--line);border-radius:var(--radius);
+    box-shadow:var(--shadow);overflow:hidden;opacity:0;transform:translateY(-4px);
+    pointer-events:none;transition:opacity .15s ease,transform .15s ease;
+  }
+  .dropdown.open{opacity:1;transform:none;pointer-events:auto}
+  .dd-item{padding:11px 14px;display:flex;justify-content:space-between;gap:10px;cursor:pointer;border-bottom:1px solid rgba(30,61,90,.6)}
+  .dd-item:last-child{border-bottom:none}
+  .dd-item:active,.dd-item:hover{background:rgba(45,212,238,.08)}
+  .dd-item .nm{font-weight:600}
+  .dd-item .meta{color:var(--dim);font-size:12px;white-space:nowrap}
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 4px}
+  .chip{
+    padding:7px 13px;border-radius:999px;border:1px solid var(--line);background:var(--card);
+    color:var(--txt);font-size:13px;cursor:pointer;transition:all .15s ease;user-select:none;
+  }
+  .chip:hover{border-color:var(--acc)}
+  .chip.on{background:var(--acc);color:#06222b;border-color:var(--acc);font-weight:700}
+  .stats{display:flex;gap:10px;margin:18px 0 6px;flex-wrap:wrap}
+  .stat{flex:1;min-width:100px;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px}
+  .stat b{display:block;font-size:20px;color:var(--acc)}
+  .stat span{font-size:12px;color:var(--dim)}
+  h2.sec{font-size:15px;color:var(--dim);letter-spacing:.6px;text-transform:uppercase;margin:26px 0 10px}
+  .meetrow{
+    display:flex;justify-content:space-between;gap:12px;align-items:center;
+    background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    padding:13px 15px;margin-bottom:9px;cursor:pointer;transition:border-color .15s ease,transform .15s ease;
+  }
+  .meetrow:hover{border-color:var(--acc);transform:translateX(2px)}
+  .meetrow .mn{font-weight:600}
+  .meetrow .md{color:var(--dim);font-size:12.5px;margin-top:2px}
+  .badge{font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px;background:rgba(45,212,238,.14);color:var(--acc);white-space:nowrap}
+  .badge.lcm{background:rgba(255,196,77,.15);color:var(--gold)}
+  /* swimmer */
+  .back{display:inline-block;margin-bottom:12px;color:var(--dim);font-size:14px;cursor:pointer}
+  .phead{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  .phead h1{margin:0;font-size:26px}
+  .phead .sub{color:var(--dim);margin-top:4px;font-size:14px}
+  table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
+  th,td{padding:10px 12px;text-align:left;font-size:14px;border-bottom:1px solid rgba(30,61,90,.55)}
+  th{color:var(--dim);font-size:12px;text-transform:uppercase;letter-spacing:.5px;background:rgba(255,255,255,.02)}
+  tr:last-child td{border-bottom:none}
+  tbody tr{transition:background .12s ease}
+  tbody tr:hover{background:rgba(45,212,238,.05)}
+  .pbtime{font-weight:700;color:var(--acc2);font-variant-numeric:tabular-nums;white-space:nowrap}
+  .time{font-variant-numeric:tabular-nums;white-space:nowrap}
+  .courselab{font-size:11px;color:var(--dim)}
+  .evrow{cursor:pointer}
+  .detail-row td{background:rgba(10,22,34,.5);padding:14px 12px}
+  .spark{width:100%;height:64px;display:block}
+  .hist{display:flex;flex-direction:column;gap:5px;margin-top:10px;font-size:13px}
+  .hist .hrow{display:flex;justify-content:space-between;gap:10px;color:var(--dim)}
+  .hist .hrow b{color:var(--txt);font-variant-numeric:tabular-nums}
+  .hist .hrow .pbflag{color:var(--gold);font-weight:700}
+  .skl{border-radius:var(--radius);background:linear-gradient(100deg,var(--card) 40%,var(--card2) 50%,var(--card) 60%);background-size:200% 100%;animation:sk 1.1s infinite linear;height:56px;margin-bottom:9px}
+  @keyframes sk{to{background-position:-200% 0}}
+  .empty{color:var(--dim);padding:22px 4px;font-size:14.5px}
+  .err{background:rgba(255,90,90,.12);border:1px solid rgba(255,90,90,.4);color:#ffb3b3;border-radius:var(--radius);padding:12px 14px;font-size:14px}
+  select.evsel{
+    width:100%;padding:12px;font-size:15px;color:var(--txt);background:var(--card);
+    border:1px solid var(--line);border-radius:var(--radius);outline:none;margin-bottom:12px;
+  }
+  footer{color:var(--dim);font-size:12px;text-align:center;padding:20px 16px 34px}
+</style>
+</head>
+<body>
+<header>
+  <div class="bar">
+    <div class="logo">🏊</div>
+    <div class="title">Maryland Swimming Data Bank<small>MD LSC MEET RESULTS · 2023 — 2027</small></div>
+  </div>
+</header>
+<main id="app"></main>
+<footer>Data: Maryland Swimming (GoMotion) meet result files, refreshed weekly into Supabase. Personal bests are computed per event &amp; course (SCY/LCM separate).</footer>
+
+<script>
+"use strict";
+/* ==== CONFIG (anon public key — safe to embed; data is protected by Supabase RLS public-read policies) ==== */
+const SUPABASE_URL = "https://nfulkrbyaqtuifvrlqfh.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5mdWxrcmJ5YXF0dWlmdnJscWZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzODMzNjQsImV4cCI6MjA5Mzk1OTM2NH0.Z2T3VD_YAJbtGH-wV5Dj3AkZ10tRRXyqsD3_I3Np8-4";
+const REST = SUPABASE_URL.replace(/\/$/,"") + "/rest/v1/";
+const HEADERS = { "apikey": SUPABASE_ANON_KEY, "Authorization": "Bearer " + SUPABASE_ANON_KEY };
+
+const app = document.getElementById("app");
+const cache = new Map();
+let searchTimer = null, searchAbort = null;
+
+async function api(path, opts={}){
+  if(cache.has(path)) return cache.get(path);
+  const res = await fetch(REST + path, { headers: HEADERS, signal: opts.signal });
+  if(!res.ok) throw new Error("Supabase " + res.status);
+  const data = await res.json();
+  cache.set(path, data);
+  return data;
+}
+async function countOf(path){
+  const res = await fetch(REST + path, { method:"HEAD", headers:{ ...HEADERS, "Prefer":"count=exact" } });
+  const cr = res.headers.get("content-range") || "";
+  const n = parseInt((cr.split("/")[1]||"").trim(), 10);
+  return isNaN(n) ? null : n;
+}
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function fmtTime(sec){
+  if(sec == null) return "—";
+  sec = Number(sec);
+  if(isNaN(sec)) return "—";
+  if(sec < 60) return sec.toFixed(2);
+  const m = Math.floor(sec/60), s = sec - m*60;
+  return m + ":" + s.toFixed(2).padStart(5,"0");
+}
+function fmtDate(iso){
+  if(!iso) return "";
+  const d = new Date(iso + "T12:00:00");
+  return d.toLocaleDateString("en-US",{month:"short", day:"numeric", year:"numeric"});
+}
+const debounce = (fn,ms)=> (...a)=>{ clearTimeout(searchTimer); searchTimer=setTimeout(()=>fn(...a),ms); };
+
+/* ================= HOME ================= */
+async function viewHome(){
+  app.innerHTML = `
+  <div class="view">
+    <div class="searchwrap">
+      <span class="icon">🔍</span>
+      <input id="q" class="searchbox" type="text" placeholder="Search a swimmer — try “Calvin Yang”" autocomplete="off">
+      <div id="dd" class="dropdown"></div>
+    </div>
+    <div class="chips">
+      <span class="chip" id="chip-calvin">⭐ Calvin Yang</span>
+      <span class="chip" id="chip-meets">📋 Browse meets</span>
+    </div>
+    <div class="stats">
+      <div class="stat"><b id="st-meets">…</b><span>meets</span></div>
+      <div class="stat"><b id="st-results">…</b><span>results</span></div>
+      <div class="stat"><b id="st-swimmers">…</b><span>swimmers</span></div>
+    </div>
+    <h2 class="sec">Most recent meets</h2>
+    <div id="recent"><div class="skl"></div><div class="skl"></div><div class="skl"></div></div>
+  </div>`;
+  const q = document.getElementById("q"), dd = document.getElementById("dd");
+  q.focus();
+  q.addEventListener("input", debounce(()=> runSearch(q.value.trim(), dd), 180));
+  q.addEventListener("focus", ()=>{ if(dd.innerHTML) dd.classList.add("open"); });
+  document.addEventListener("click", e=>{ if(!e.target.closest(".searchwrap")) dd.classList.remove("open"); });
+  document.getElementById("chip-meets").onclick = ()=> location.hash = "#/meets";
+  document.getElementById("chip-calvin").onclick = async ()=>{
+    q.value = "Calvin Yang"; q.focus(); await runSearch("Calvin Yang", dd);
+  };
+  countOf("meets?select=id").then(n=> setStat("st-meets", n));
+  countOf("individual_results?select=id").then(n=> setStat("st-results", n));
+  countOf("swimmers?select=id").then(n=> setStat("st-swimmers", n));
+  try{
+    const meets = await api("meets?select=id,name,start_date,course,season&order=start_date.desc&limit=8");
+    document.getElementById("recent").innerHTML = meets.map(meetRow).join("") || `<div class="empty">No meets yet.</div>`;
+    bindMeetRows();
+  }catch(e){ document.getElementById("recent").innerHTML = `<div class="err">Could not load meets. ${esc(e.message)}</div>`; }
+}
+function setStat(id,n){ const el=document.getElementById(id); if(el && n!=null) el.textContent = n.toLocaleString(); }
+function meetRow(m){
+  return `<div class="meetrow" data-meet="${m.id}">
+    <div><div class="mn">${esc(m.name)}</div><div class="md">${fmtDate(m.start_date)} · ${esc(m.season||"")}</div></div>
+    <span class="badge ${m.course==="LCM"?"lcm":""}">${esc(m.course)}</span></div>`;
+}
+function bindMeetRows(){
+  app.querySelectorAll("[data-meet]").forEach(el=> el.onclick = ()=> location.hash = "#/meet/" + el.dataset.meet);
+}
+async function runSearch(qstr, dd){
+  if(!qstr){ dd.classList.remove("open"); dd.innerHTML=""; return; }
+  if(searchAbort) searchAbort.abort();
+  searchAbort = new AbortController();
+  try{
+    const rows = await searchSwimmers(qstr, searchAbort.signal);
+    if(!rows.length){ dd.innerHTML = `<div class="dd-item"><span class="nm">No swimmer found</span></div>`; }
+    else dd.innerHTML = rows.map(s=>`
+      <div class="dd-item" data-sw="${s.id}">
+        <span class="nm">${esc(s.last_name)}, ${esc(s.first_name)}</span>
+        <span class="meta">${esc(s.teams?.code||"")} · ${s.gender==="M"?"Boys":s.gender==="F"?"Girls":""}</span>
+      </div>`).join("");
+    dd.classList.add("open");
+    dd.querySelectorAll("[data-sw]").forEach(el=> el.onclick = ()=>{ dd.classList.remove("open"); location.hash = "#/swimmer/" + el.dataset.sw; });
+  }catch(e){ if(e.name!=="AbortError"){ dd.innerHTML = `<div class="dd-item"><span class="nm">Search failed — try again</span></div>`; dd.classList.add("open"); } }
+}
+async function searchSwimmers(qstr, signal){
+  const sel = "select=id,first_name,last_name,gender,teams(code,name)";
+  const like = v => encodeURIComponent("%" + v + "%");
+  const parts = qstr.split(/\s+/).filter(Boolean);
+  let path;
+  if(parts.length >= 2){
+    path = `swimmers?${sel}&first_name=ilike.${like(parts[0])}&last_name=ilike.${like(parts.slice(1).join(" "))}&order=last_name,first_name&limit=15`;
+    const r = await fetch(REST + path, {headers: HEADERS, signal});
+    if(r.ok){ const d = await r.json(); if(d.length) return d; }
+  }
+  path = `swimmers?${sel}&or=(last_name.ilike.${like(qstr)},first_name.ilike.${like(qstr)})&order=last_name,first_name&limit=15`;
+  const r = await fetch(REST + path, {headers: HEADERS, signal});
+  if(!r.ok) throw new Error("search " + r.status);
+  return r.json();
+}
+
+/* ================= SWIMMER ================= */
+async function viewSwimmer(id){
+  app.innerHTML = `<div class="view"><span class="back" onclick="history.back()">← Back</span>
+    <div class="skl"></div><div class="skl"></div><div class="skl"></div></div>`;
+  try{
+    const [sw] = await api(`swimmers?select=id,first_name,last_name,gender,teams(code,name)&id=eq.${id}`);
+    if(!sw){ app.innerHTML = `<div class="empty">Swimmer not found.</div>`; return; }
+    const results = await api(
+      `individual_results?select=finals_time,age,age_group,place,dq,` +
+      `events(event_code,event_name,sort_order),meets(id,name,start_date,course,season)` +
+      `&swimmer_id=eq.${id}&finals_time=not.is.null&order=id.desc&limit=2000`);
+    renderSwimmer(sw, results);
+  }catch(e){ app.innerHTML = `<div class="err">Could not load this swimmer. ${esc(e.message)}</div>`; }
+}
+function renderSwimmer(sw, results){
+  const pb = new Map(); // key event_code|course -> {time, date, meet, age}
+  const series = new Map(); // same key -> [{date,time,meet,pb}]
+  const sorted = [...results].sort((a,b)=> (a.meets.start_date < b.meets.start_date ? -1 : 1));
+  for(const r of sorted){
+    if(r.dq) continue;
+    const key = r.events.event_code + "|" + r.meets.course;
+    if(!series.has(key)) series.set(key, []);
+    const cur = pb.get(key);
+    const isPB = !cur || Number(r.finals_time) < cur.time;
+    series.get(key).push({ date:r.meets.start_date, time:Number(r.finals_time), meet:r.meets.name, isPB });
+    if(isPB) pb.set(key, { time:Number(r.finals_time), date:r.meets.start_date, meet:r.meets.name, age:r.age, code:r.events.event_code, name:r.events.event_name, course:r.meets.course, sort:r.events.sort_order });
+  }
+  const pbs = [...pb.values()].sort((a,b)=> a.course.localeCompare(b.course) || a.sort - b.sort);
+  const meetsSeen = new Set(results.map(r=> r.meets.id)).size;
+  const pbRows = pbs.map((p,i)=>`
+    <tr class="evrow" data-key="${esc(p.code)}|${esc(p.course)}">
+      <td>${esc(p.name)} <span class="courselab">${esc(p.course)}</span></td>
+      <td class="pbtime">${fmtTime(p.time)}</td>
+      <td>${fmtDate(p.date)}</td>
+      <td>${esc(p.meet)}</td>
+    </tr>
+    <tr class="detail-row" id="det-${i}" hidden><td colspan="4"></td></tr>`).join("");
+  app.innerHTML = `
+  <div class="view">
+    <span class="back" onclick="location.hash='#/'">← Search</span>
+    <div class="phead">
+      <div><h1>${esc(sw.first_name)} ${esc(sw.last_name)}</h1>
+      <div class="sub">${esc(sw.teams?.name||"")} ${sw.teams?.code? "("+esc(sw.teams.code)+")" : ""} · ${results.length} timed swims · ${meetsSeen} meets</div></div>
+      <span class="badge">${sw.gender==="M"?"Boys":sw.gender==="F"?"Girls":""}</span>
+    </div>
+    <h2 class="sec">Personal bests</h2>
+    ${pbs.length ? `<table><thead><tr><th>Event</th><th>PB</th><th>Date</th><th>Meet</th></tr></thead><tbody>${pbRows}</tbody></table>`
+                 : `<div class="empty">No timed results yet.</div>`}
+    <div class="empty" style="padding-top:14px">Tap a PB row to see the full progression for that event.</div>
+  </div>`;
+  app.querySelectorAll(".evrow").forEach((row, i)=>{
+    row.onclick = ()=>{
+      const det = document.getElementById("det-" + i);
+      const open = !det.hidden;
+      app.querySelectorAll(".detail-row").forEach(d=> d.hidden = true);
+      if(open) return;
+      const key = row.dataset.key;
+      det.querySelector("td").innerHTML = progressionHTML(series.get(key) || []);
+      det.hidden = false;
+    };
+  });
+}
+function progressionHTML(rows){
+  if(!rows.length) return `<div class="empty">No history.</div>`;
+  const W=680,H=64,PAD=6;
+  const ts = rows.map(r=> r.time), lo = Math.min(...ts), hi = Math.max(...ts);
+  const xs = i => rows.length===1 ? W/2 : PAD + i*(W-2*PAD)/(rows.length-1);
+  const ys = t => hi===lo ? H/2 : PAD + (t-lo)*(H-2*PAD)/(hi-lo);
+  const pts = rows.map((r,i)=> `${xs(i).toFixed(1)},${ys(r.time).toFixed(1)}`).join(" ");
+  const dots = rows.map((r,i)=> `<circle cx="${xs(i)}" cy="${ys(r.time)}" r="${r.isPB?4:2.6}" fill="${r.isPB? "#ffc44d":"#2dd4ee"}"/>`).join("");
+  const hist = [...rows].reverse().map(r=>`
+    <div class="hrow"><span>${fmtDate(r.date)} · ${esc(r.meet)}</span><span><b>${fmtTime(r.time)}</b>${r.isPB? ' <span class="pbflag">PB</span>':""}</span></div>`).join("");
+  return `<svg class="spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"><polyline points="${pts}" fill="none" stroke="#2dd4ee" stroke-width="2"/>${dots}</svg>
+          <div class="hist">${hist}</div>`;
+}
+
+/* ================= MEETS ================= */
+const SEASONS = ["2026-2027","2025-2026","2024-2025","2023-2024"];
+async function viewMeets(){
+  const cur = (location.hash.split("?")[1] || SEASONS[0]);
+  app.innerHTML = `<div class="view"><span class="back" onclick="location.hash='#/'">← Search</span>
+    <div class="chips">${SEASONS.map(s=>`<span class="chip ${s===cur?"on":""}" data-season="${s}">${s}</span>`).join("")}</div>
+    <div id="mlist"><div class="skl"></div><div class="skl"></div><div class="skl"></div></div></div>`;
+  app.querySelectorAll("[data-season]").forEach(el=> el.onclick = ()=>{ location.hash = "#/meets?" + el.dataset.season; });
+  try{
+    const meets = await api(`meets?select=id,name,start_date,course,season&season=eq.${encodeURIComponent(cur)}&order=start_date.asc&limit=200`);
+    document.getElementById("mlist").innerHTML = meets.map(meetRow).join("") || `<div class="empty">No meets in this season.</div>`;
+    bindMeetRows();
+  }catch(e){ document.getElementById("mlist").innerHTML = `<div class="err">${esc(e.message)}</div>`; }
+}
+async function viewMeet(id){
+  app.innerHTML = `<div class="view"><span class="back" onclick="history.back()">← Back</span><div class="skl"></div><div class="skl"></div></div>`;
+  try{
+    const [m] = await api(`meets?select=id,name,start_date,end_date,course,season&id=eq.${id}`);
+    if(!m){ app.innerHTML = `<div class="empty">Meet not found.</div>`; return; }
+    const evs = await api("events?select=id,event_code,event_name,sort_order&is_relay=eq.false&order=sort_order");
+    const n = await countOf(`individual_results?select=id&meet_id=eq.${id}`);
+    app.innerHTML = `<div class="view">
+      <span class="back" onclick="location.hash='#/meets?${esc(m.season||"")}'">← Meets</span>
+      <div class="phead"><div><h1 style="font-size:22px">${esc(m.name)}</h1>
+      <div class="sub">${fmtDate(m.start_date)} · ${esc(m.course)} · ${esc(m.season||"")}${n!=null? " · " + n.toLocaleString() + " results":""}</div></div></div>
+      <h2 class="sec">Fastest swims by event</h2>
+      <select class="evsel" id="evsel">${evs.map(e=>`<option value="${e.id}">${esc(e.event_name)}</option>`).join("")}</select>
+      <div id="top10"></div></div>`;
+    const sel = document.getElementById("evsel");
+    const load = async ()=>{
+      const box = document.getElementById("top10");
+      box.innerHTML = `<div class="skl"></div>`;
+      try{
+        const rows = await api(`individual_results?select=finals_time,age,age_group,place,swimmers(id,first_name,last_name,gender,teams(code))` +
+          `&meet_id=eq.${id}&event_id=eq.${sel.value}&dq=eq.false&finals_time=not.is.null&order=finals_time.asc&limit=10`);
+        box.innerHTML = rows.length ? `<table><thead><tr><th>#</th><th>Swimmer</th><th>Age grp</th><th>Time</th></tr></thead><tbody>${
+          rows.map((r,i)=>`<tr class="evrow" onclick="location.hash='#/swimmer/${r.swimmers.id}'">
+            <td>${i+1}</td><td>${esc(r.swimmers.first_name)} ${esc(r.swimmers.last_name)} <span class="courselab">${esc(r.swimmers.teams?.code||"")}</span></td>
+            <td>${esc(r.age_group||"")}</td><td class="pbtime">${fmtTime(r.finals_time)}</td></tr>`).join("")}</tbody></table>`
+          : `<div class="empty">No results for this event at this meet.</div>`;
+      }catch(e){ box.innerHTML = `<div class="err">${esc(e.message)}</div>`; }
+    };
+    sel.onchange = load; load();
+  }catch(e){ app.innerHTML = `<div class="err">${esc(e.message)}</div>`; }
+}
+
+/* ================= ROUTER ================= */
+function route(){
+  const h = location.hash || "#/";
+  window.scrollTo({top:0, behavior:"instant"});
+  if(h.startsWith("#/swimmer/")) viewSwimmer(h.split("/")[2]);
+  else if(h.startsWith("#/meet/")) viewMeet(h.split("/")[2]);
+  else if(h.startsWith("#/meets")) viewMeets();
+  else viewHome();
+}
+window.addEventListener("hashchange", route);
+route();
+</script>
+</body>
+</html>
