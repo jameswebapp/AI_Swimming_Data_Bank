@@ -39,22 +39,19 @@ manifests. Counts below are from the table parser (see
   - CL2 D0 carries a 12-char partial USS ID; swimmer identity also leans
     on the (first, last) name cache, so namesakes can merge.
 
-## Still to do
+## Resolution (2026-10-23)
 
-1. ~~Commit & push~~ — done 2026-10-23 (commit 7e4273b).
-2. **Fix Supabase ingest first**: the weekly Actions job has failed at
-   Step 4 (ingest) every week since 2026-06-02 with
-   `[Errno -2] Name or service not known` — the hostname in the
-   `SUPABASE_URL` repo secret no longer resolves (last successful run:
-   2026-05-26). Scrape/download/parse succeed; only the DB write fails.
-   Check the Supabase project's status/URL and update the `SUPABASE_URL`
-   (and if needed `SUPABASE_KEY`) repo secrets.
-3. Backfill Supabase with the newly found result files — the weekly
-   Actions job only processes the latest season, but manual dispatch
-   accepts a season: `gh workflow run weekly_ingest.yml -f season=2025-2026`
-   (12 new ZIPs), `-f season=2024-2025` (1 new ZIP), or run
-   `python run_pipeline.py --season …` locally with .env credentials.
-   The 2023-2024 duplicate was manifest-only if the backup ZIP produced
-   no CL2 rows.
-4. Re-run 2026-2027 ingest after the secret fix (manual dispatch as
-   above with `season=2026-2027`).
+1. Commit & push — done (commits 7e4273b, 9c0875d).
+2. Supabase ingest failure root cause: the Supabase project had been
+   **paused** (free tier); the owner resumed it on 2026-10-23 and the
+   same secrets worked again — no secret changes were needed.
+3. All four seasons re-ingested via manual workflow dispatch
+   (`gh workflow run weekly_ingest.yml -f season=…`), each ending with
+   "Ingestion completed successfully":
+   - 2023-2024: 72 meets, 143,049 results (72 CL2)
+   - 2024-2025: 68 meets, 140,698 results (69 ZIPs, one contains no CL2)
+   - 2025-2026: 70 meets, 140,554 results
+   - 2026-2027: 10 meets, 19,605 results
+   Total: 220 meets, 443,906 results. Weekly schedule should be healthy
+   again from the next Tuesday run — worth a spot-check after it fires,
+   since the pause went unnoticed for ~5 months.
