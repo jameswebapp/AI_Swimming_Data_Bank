@@ -124,6 +124,8 @@ def ingest_data(data_file: str = DEFAULT_DATA_FILE, batch_size: int = 500, seaso
     # Caches for dedup
     team_cache = {}   # (code, lsc) -> team_id
     swimmer_cache = {}  # uss_id -> swimmer_id
+    swimmer_team_current = {}  # swimmer_id -> team_id currently stored in DB
+    swimmer_team_latest = {}   # swimmer_id -> (meet_start_date, team_id) newest seen this run
 
     # Pre-load existing teams
     existing_teams = sb.table("teams").select("id, code, lsc").execute()
@@ -136,12 +138,13 @@ def ingest_data(data_file: str = DEFAULT_DATA_FILE, batch_size: int = 500, seaso
     offset = 0
     limit = 1000
     while True:
-        resp = sb.table("swimmers").select("id, uss_id, first_name, last_name").range(offset, offset + limit - 1).execute()
+        resp = sb.table("swimmers").select("id, uss_id, first_name, last_name, team_id").range(offset, offset + limit - 1).execute()
         if not resp.data:
             break
         for s in resp.data:
             if s["uss_id"]:
                 swimmer_cache[s["uss_id"]] = s["id"]
+            swimmer_team_current[s["id"]] = s.get("team_id")
             fn = s.get("first_name", "").strip().lower() if s.get("first_name") else ""
             ln = s.get("last_name", "").strip().lower() if s.get("last_name") else ""
             if fn and ln:
@@ -275,6 +278,7 @@ def ingest_data(data_file: str = DEFAULT_DATA_FILE, batch_size: int = 500, seaso
                 try:
                     resp = sb.table("swimmers").insert(swimmer_row).execute()
                     swimmer_id = resp.data[0]["id"]
+                    swimmer_team_current[swimmer_id] = swimmer_row.get("team_id")
                     if uss_id:
                         swimmer_cache[uss_id] = swimmer_id
                     swimmer_name_cache[(fn_key, ln_key)] = swimmer_id
@@ -299,6 +303,20 @@ def ingest_data(data_file: str = DEFAULT_DATA_FILE, batch_size: int = 500, seaso
 
             if not swimmer_id:
                 continue
+
+            # Team for THIS meet: the team the swimmer represented in
+            # this file. It is stored on every result row so that a
+            # transfer keeps its history — swimmers.team_id alone can
+            # only hold the most recent team.
+            result_team_id = None
+            _team_code = swimmer.get("team_code", "").strip()
+            if _team_code:
+                _team_lsc = (swimmer.get("lsc") or "MD").strip() or "MD"
+                result_team_id = team_cache.get((_team_code, _team_lsc))
+            if result_team_id and meet_start_date:
+                _prev = swimmer_team_latest.get(swimmer_id)
+                if _prev is None or meet_start_date >= _prev[0]:
+                    swimmer_team_latest[swimmer_id] = (meet_start_date, result_team_id)
 
             # Build result rows for this swimmer
             for result in swimmer.get("results", []):
@@ -333,6 +351,7 @@ def ingest_data(data_file: str = DEFAULT_DATA_FILE, batch_size: int = 500, seaso
                     "meet_id": meet_id,
                     "swimmer_id": swimmer_id,
                     "event_id": event_id,
+                    "team_id": result_team_id,
                     "seed_time": result.get("seed_time"),
                     "finals_time": result.get("finals_time"),
                     "age": age,
@@ -364,6 +383,21 @@ def ingest_data(data_file: str = DEFAULT_DATA_FILE, batch_size: int = 500, seaso
 
             stats["results_inserted"] += inserted
             print(f"    Results: {inserted} inserted")
+
+    # 4b. Sync swimmers.team_id to the newest team seen this run.
+    # Caveat: run seasons in chronological order. run_pipeline and the
+    # weekly job only ever process the latest season (whose meets are
+    # the newest), so in practice this never moves a swimmer backwards.
+    team_updates = 0
+    for sid, (_dt, tid) in swimmer_team_latest.items():
+        if tid and swimmer_team_current.get(sid) != tid:
+            try:
+                sb.table("swimmers").update({"team_id": tid}).eq("id", sid).execute()
+                team_updates += 1
+            except Exception as e:
+                print(f"    WARN swimmer team update {sid}: {e}")
+    if team_updates:
+        print(f"\nUpdated current team for {team_updates} swimmers")
 
     # 5. Refresh materialized views
     print("\nRefreshing materialized views...")

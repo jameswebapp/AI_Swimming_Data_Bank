@@ -20,6 +20,11 @@ import re
 from typing import Optional, Dict, List, Any
 from swim_parser.time_utils import parse_time_string, normalize_event_name, parse_course
 
+# Time tokens inside a D0 result block (e.g. "41.15", "1:25.76").
+_TIME_TOKEN_RE = re.compile(r"\d{1,2}:\d{2}\.\d{2}|\d{1,3}\.\d{2}")
+# DQ / no-show markers, optionally carrying a course suffix ("DQY").
+_DQ_TOKEN_RE = re.compile(r"\b(?:DQ|NS|SCR|DFS|DNF)[YLS]?\b")
+
 
 def _s(line: str, start: int, end: int) -> str:
     """Extract and strip a fixed-width field from a line (0-indexed)."""
@@ -255,13 +260,44 @@ def _parse_d0(line: str) -> Optional[dict]:
     distance = int(distance_str) if distance_str.isdigit() else 0
     event_name, event_code, stroke = normalize_event_name(distance, stroke_code)
     
-    # Seed time: pos ~89-98 (e.g., '42.70Y' or '1:58.46Y')
-    seed_time_raw = _s(line, 88, 98)
-    seed_time = parse_time_string(seed_time_raw)
-    
-    # Finals time: pos ~116-126 (e.g., '41.01Y' or '1:22.36Y')
-    finals_time_raw = _s(line, 116, 126)
-    finals_time = parse_time_string(finals_time_raw)
+    # Result times — tokenized, NOT fixed columns.
+    #
+    # Two D0 layouts exist in real files:
+    #   * Timed-final meets: seed @~89, finals @~116.
+    #   * Prelim/final meets (championships): seed @~89, prelim @~98,
+    #     finals @~116. Reading finals from fixed cols 116-126 on those
+    #     files landed on a 1-2 digit field and stored impossible
+    #     "finals" of 1.00-4.00 seconds, and lost real finals for
+    #     swimmers whose only swim was the prelim.
+    #
+    # Rule: collect every time token in cols 84-136. A token starting
+    # before col 95 is the seed. The result time is the LAST token at
+    # col >= 95 — the final when the swimmer has one, otherwise the
+    # prelim (that swim is the swimmer's official result of the meet).
+    time_block = line[84:136]
+    tokens = [(m.start() + 84, m.group())
+              for m in _TIME_TOKEN_RE.finditer(time_block)]
+    seed_time = None
+    finals_time = None
+    if tokens:
+        if tokens[0][0] < 95:
+            seed_time = parse_time_string(tokens[0][1])
+            result_tokens = tokens[1:]
+        else:
+            result_tokens = tokens
+        if result_tokens:
+            finals_time = parse_time_string(result_tokens[-1][1])
+
+    # DQ / no-show markers can sit anywhere in the time block (e.g.
+    # "DQY" immediately after the seed in prelim/final files).
+    dq = bool(_DQ_TOKEN_RE.search(line[80:140]))
+    if dq:
+        finals_time = None
+
+    # Sanity: no real swim is under 5 seconds; anything smaller is a
+    # mis-read of a non-time field and must never be stored as a result.
+    if finals_time is not None and finals_time < 5:
+        finals_time = None
     
     # Heat and lane: |.01Y     5| 7    29  |
     # Pos 127-129: heat, 130-132: lane
@@ -278,9 +314,6 @@ def _parse_d0(line: str) -> Optional[dict]:
     # Place encoded in positions 145-149
     place_str = _s(line, 145, 149)
     place = int(place_str) if place_str.strip().isdigit() else None
-    
-    # DQ check
-    dq = finals_time_raw.strip().upper() in ('DQ', 'NS', 'NSY', 'SCR', 'DFS', 'DNF')
     
     # Team/LSC
     lsc = _s(line, 3, 5)

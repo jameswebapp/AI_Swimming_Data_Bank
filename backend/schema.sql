@@ -113,6 +113,7 @@ CREATE TABLE IF NOT EXISTS individual_results (
     meet_id      INTEGER NOT NULL REFERENCES meets(id) ON DELETE CASCADE,
     swimmer_id   INTEGER NOT NULL REFERENCES swimmers(id),
     event_id     INTEGER NOT NULL REFERENCES events(id),
+    team_id      INTEGER REFERENCES teams(id),  -- team represented at THIS meet (transfers!)
     seed_time    NUMERIC(8,2),
     finals_time  NUMERIC(8,2),
     age          SMALLINT,
