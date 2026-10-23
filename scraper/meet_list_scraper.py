@@ -85,6 +85,12 @@ def _classify_link(href: str, link_text: str) -> tuple[str, str]:
     # Classify role based on URL patterns and link text
     if "meet-results-" in href_lower and file_type == "zip":
         return file_type, "result_zip"
+    elif file_type == "zip" and ("final-resul" in href_lower or "127648890-" in href_lower):
+        # Result ZIPs uploaded without the meet-results- prefix, e.g.
+        # "127648890-2024-nbac-thanksgiving-meet---final-results....zip"
+        # (127648890- is the QuickUpload prefix used for result files;
+        #  event files use 127648150-, backups 127648891-.)
+        return file_type, "result_zip"
     elif "meet-results" in href_lower and file_type == "pdf":
         return file_type, "result_pdf"
     elif "swmm" in href_lower and "bkup" in href_lower:
@@ -116,13 +122,138 @@ def _classify_link(href: str, link_text: str) -> tuple[str, str]:
         return file_type, "other"
 
 
+_DATE_CELL_RE = re.compile(
+    r"(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)",
+    re.IGNORECASE,
+)
+_NAME_CUT_RE = re.compile(
+    r"(?:\*+\s*)?(?:Updated?\b|Scores\b|Online Apparel|Sessions?\b|"
+    r"Format Change|Meet Info|MEET FULL|Cancell?ed\b)",
+    re.IGNORECASE,
+)
+_COURSE_TAG_RE = re.compile(r"\(\s*(?:SCY|LCM|SCM)\s*\)", re.IGNORECASE)
+
+
+def _clean_meet_name(raw: str) -> str:
+    """
+    Clean the meet-name cell text. Real meet names end with the course tag
+    (SCY/LCM/SCM) — everything after it is session/update notes. When no
+    course tag is present, cut at the first note marker instead.
+    """
+    name = raw.replace("\xa0", " ")
+    name = re.sub(r"\s+", " ", name).strip()
+    m = _COURSE_TAG_RE.search(name)
+    if m:
+        return name[:m.end()].strip(" *")
+    m = _NAME_CUT_RE.search(name)
+    if m and m.start() > 0:
+        name = name[:m.start()].strip(" *")
+    return name
+
+
+def parse_meet_schedule_table(html: str, season: str) -> list[MeetEntry]:
+    """
+    Primary parser: the GoMotion resource pages are a single table with
+    columns Date | Meet | Type | Entries Due | Meet Notice | Event File |
+    Officials | Meet Reports | Results. Parsing rows directly is
+    deterministic and — unlike the text heuristic — also captures future
+    meets that have no result files yet.
+
+    Dedup: rows are keyed by (name, date_range); a repeated row merges its
+    links into the first entry instead of creating a duplicate meet.
+    Placeholder rows (OPEN / OPEN FOR BID) and link-less rows are skipped.
+    """
+    soup = BeautifulSoup(html, "html.parser")
+    by_key: dict[tuple[str, str], MeetEntry] = {}
+    order: list[MeetEntry] = []
+
+    for tr in soup.find_all("tr"):
+        cells = tr.find_all("td")
+        if len(cells) < 3:
+            continue
+        date_range = re.sub(r"\s+", " ", cells[0].get_text(" ", strip=True)).strip()
+        if not _DATE_CELL_RE.search(date_range):
+            continue
+        name = _clean_meet_name(cells[1].get_text(" ", strip=True))
+        if not name or name.upper() in ("OPEN", "OPEN FOR BID"):
+            continue
+
+        entry = MeetEntry(name=name, date_range=date_range, season=season)
+        last_idx = len(cells) - 1
+        n_links = 0
+        for ci, cell in enumerate(cells):
+            for a in cell.find_all("a", href=True):
+                href = a.get("href", "")
+                if not href or href.startswith("#"):
+                    continue
+                if href.startswith("/"):
+                    href = urljoin(GOMOTION_BASE_URL, href)
+                text = a.get_text(strip=True)
+                file_type, role = _classify_link(href, text)
+                if ci == last_idx and ci >= 3:
+                    # Results column: trust the link label.
+                    t = text.strip().lower()
+                    if t == "zip" and href.lower().split("?")[0].endswith(".zip"):
+                        role = "result_zip"
+                    elif t == "pdf":
+                        role = "result_pdf"
+                    elif t == "backup":
+                        role = "backup_zip"
+                elif ci == 4:
+                    if file_type == "pdf":
+                        role = "meet_notice_pdf"
+                elif ci == 5:
+                    role = "event_file"
+                entry.all_files.append(asdict(MeetFile(
+                    label=f"{role} ({text})", url=href, file_type=file_type,
+                )))
+                n_links += 1
+                if role == "result_zip" and not entry.result_zip_url:
+                    entry.result_zip_url = href
+                elif role == "backup_zip" and not entry.backup_zip_url:
+                    entry.backup_zip_url = href
+                elif role == "event_file" and not entry.event_file_url:
+                    entry.event_file_url = href
+                elif role == "result_pdf" and not entry.result_pdf_url:
+                    entry.result_pdf_url = href
+                elif role == "meet_notice_pdf" and not entry.meet_notice_pdf_url:
+                    entry.meet_notice_pdf_url = href
+        if n_links == 0:
+            continue
+
+        key = (name.lower(), date_range.lower())
+        if key in by_key:
+            # Merge duplicate row into the first entry (fill gaps only).
+            prev = by_key[key]
+            for attr in ("result_zip_url", "backup_zip_url", "event_file_url",
+                         "result_pdf_url", "meet_notice_pdf_url"):
+                if not getattr(prev, attr) and getattr(entry, attr):
+                    setattr(prev, attr, getattr(entry, attr))
+            seen = {f["url"] for f in prev.all_files}
+            prev.all_files.extend(f for f in entry.all_files if f["url"] not in seen)
+        else:
+            by_key[key] = entry
+            order.append(entry)
+    return order
+
+
 def parse_meet_schedule(html: str, season: str) -> list[MeetEntry]:
     """
     Parse the Maryland Swimming meet schedule HTML and extract meet entries.
 
-    The page structure is a series of date headers followed by meet blocks,
-    each containing links to various files (PDFs, ZIPs, signups, etc.).
+    Tries the deterministic table parser first; falls back to the legacy
+    text heuristic (and its ZIP-anchor fallback) if the table layout is
+    not recognised.
     """
+    table_meets = parse_meet_schedule_table(html, season)
+    if len(table_meets) >= 10:
+        return table_meets
+    print(f"  Table parser found only {len(table_meets)} meets, "
+          f"trying heuristic parser...")
+    return _parse_meet_schedule_heuristic(html, season)
+
+
+def _parse_meet_schedule_heuristic(html: str, season: str) -> list[MeetEntry]:
     soup = BeautifulSoup(html, "html.parser")
     meets = []
 
@@ -216,6 +347,7 @@ def parse_meet_schedule(html: str, season: str) -> list[MeetEntry]:
                     and not text.startswith("Warm")
                     and not text.startswith("FOLLOW")
                     and not text.startswith("CANCELLED")
+                    and "Tag Manager" not in text  # GTM noscript boilerplate, not a meet
                     and not text.startswith("MEET")
                     and not text.startswith("Entry")
                     and not text.startswith("Format")

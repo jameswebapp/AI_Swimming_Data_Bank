@@ -17,7 +17,8 @@ GOMOTION_BASE_URL = "https://www.gomotionapp.com"
 SEASON_PAGES = {
     "2023-2024": "https://www.gomotionapp.com/team/md/page/system/res/186916",
     "2024-2025": "https://www.gomotionapp.com/team/md/page/system/res/210811",
-    "2025-2026": "https://www.gomotionapp.com/team/md/page/system/res/210812"
+    "2025-2026": "https://www.gomotionapp.com/team/md/page/system/res/210812",
+    "2026-2027": "https://www.gomotionapp.com/team/md/page/system/res/221132"
 }
 
 # Scraper settings
