@@ -253,6 +253,12 @@ async function viewSwimmer(id){
   }catch(e){ app.innerHTML = `<div class="err">Could not load this swimmer. ${esc(e.message)}</div>`; }
 }
 function renderSwimmer(sw, results){
+  // Data guardrail: the source files for some championship meets misalign the
+  // parser's time columns, producing impossible "finals" of 1-4 seconds.
+  // No real swim is under 5s — exclude those rows from PBs and history.
+  const rawCount = results.length;
+  results = results.filter(r => Number(r.finals_time) >= 5);
+  const hiddenCount = rawCount - results.length;
   const pb = new Map(); // key event_code|course -> {time, date, meet, age}
   const series = new Map(); // same key -> [{date,time,meet,pb}]
   const sorted = [...results].sort((a,b)=> (a.meets.start_date < b.meets.start_date ? -1 : 1));
@@ -286,7 +292,7 @@ function renderSwimmer(sw, results){
     <h2 class="sec">Personal bests</h2>
     ${pbs.length ? `<table><thead><tr><th>Event</th><th>PB</th><th>Date</th><th>Meet</th></tr></thead><tbody>${pbRows}</tbody></table>`
                  : `<div class="empty">No timed results yet.</div>`}
-    <div class="empty" style="padding-top:14px">Tap a PB row to see the full progression for that event.</div>
+    <div class="empty" style="padding-top:14px">Tap a PB row to see the full progression for that event.${hiddenCount ? `<br>${hiddenCount} result${hiddenCount>1?"s":""} hidden — source file recorded an impossible time (under 5s) for ${hiddenCount>1?"those swims":"that swim"}.` : ""}</div>
   </div>`;
   app.querySelectorAll(".evrow").forEach((row, i)=>{
     row.onclick = ()=>{
@@ -348,7 +354,7 @@ async function viewMeet(id){
       box.innerHTML = `<div class="skl"></div>`;
       try{
         const rows = await api(`individual_results?select=finals_time,age,age_group,place,swimmers(id,first_name,last_name,gender,teams(code))` +
-          `&meet_id=eq.${id}&event_id=eq.${sel.value}&dq=eq.false&finals_time=not.is.null&order=finals_time.asc&limit=10`);
+          `&meet_id=eq.${id}&event_id=eq.${sel.value}&dq=eq.false&finals_time=gte.5&order=finals_time.asc&limit=10`);
         box.innerHTML = rows.length ? `<table><thead><tr><th>#</th><th>Swimmer</th><th>Age grp</th><th>Time</th></tr></thead><tbody>${
           rows.map((r,i)=>`<tr class="evrow" onclick="location.hash='#/swimmer/${r.swimmers.id}'">
             <td>${i+1}</td><td>${esc(r.swimmers.first_name)} ${esc(r.swimmers.last_name)} <span class="courselab">${esc(r.swimmers.teams?.code||"")}</span></td>
