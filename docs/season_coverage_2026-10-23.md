@@ -39,16 +39,22 @@ manifests. Counts below are from the table parser (see
   - CL2 D0 carries a 12-char partial USS ID; swimmer identity also leans
     on the (first, last) name cache, so namesakes can merge.
 
-## Still to do (needs the owner's machine / GitHub)
+## Still to do
 
-1. Commit & push: `scraper/config.py`, `scraper/meet_list_scraper.py`,
-   `.gitignore`, `data/manifests/*.json` (4 files), this doc.
-2. Backfill Supabase with the newly found result files — the weekly
-   Actions job only processes the latest season:
-   `python run_pipeline.py --season 2025-2026` (12 new ZIPs),
-   `--season 2024-2025` (1 new ZIP), `--season 2023-2024` (no new ZIPs;
-   optional, removes nothing — the duplicate was manifest-only if the
-   backup ZIP produced no CL2 rows).
-3. 2026-2027 ingest runs automatically on the weekly schedule
-   (Tue 02:00 EST) once pushed, or manually:
-   `python run_pipeline.py --season 2026-2027`.
+1. ~~Commit & push~~ — done 2026-10-23 (commit 7e4273b).
+2. **Fix Supabase ingest first**: the weekly Actions job has failed at
+   Step 4 (ingest) every week since 2026-06-02 with
+   `[Errno -2] Name or service not known` — the hostname in the
+   `SUPABASE_URL` repo secret no longer resolves (last successful run:
+   2026-05-26). Scrape/download/parse succeed; only the DB write fails.
+   Check the Supabase project's status/URL and update the `SUPABASE_URL`
+   (and if needed `SUPABASE_KEY`) repo secrets.
+3. Backfill Supabase with the newly found result files — the weekly
+   Actions job only processes the latest season, but manual dispatch
+   accepts a season: `gh workflow run weekly_ingest.yml -f season=2025-2026`
+   (12 new ZIPs), `-f season=2024-2025` (1 new ZIP), or run
+   `python run_pipeline.py --season …` locally with .env credentials.
+   The 2023-2024 duplicate was manifest-only if the backup ZIP produced
+   no CL2 rows.
+4. Re-run 2026-2027 ingest after the secret fix (manual dispatch as
+   above with `season=2026-2027`).
