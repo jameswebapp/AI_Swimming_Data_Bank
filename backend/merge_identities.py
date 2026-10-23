@@ -169,6 +169,7 @@ def main() -> int:
     print("=" * 60)
 
     plan = {"merges": merges, "review": review}
+    os.makedirs(args.out, exist_ok=True)
     with open(os.path.join(args.out, "merge_plan.json"), "w") as f:
         json.dump(plan, f, indent=1)
     print("Wrote merge_plan.json")
