@@ -1,0 +1,60 @@
+name: Legacy Season Re-Ingest (manual)
+
+# Re-parse and re-ingest one legacy season (2015-2023) from the
+# original CL2 files stored as release assets (tag: legacy-cl2-v1).
+# The fixed CL2 parser replaces the sub-5s fake finals produced by the
+# old parser, and ingest backfills per-result team_id. Ingest replaces
+# each meet's results wholesale (idempotent).
+
+on:
+  workflow_dispatch:
+    inputs:
+      season:
+        description: 'Legacy season to re-ingest'
+        required: true
+        type: choice
+        options:
+          - '2015-2016'
+          - '2016-2017'
+          - '2020-2021'
+          - '2021-2022'
+          - '2022-2023'
+
+jobs:
+  legacy-ingest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Download legacy CL2 bundle for the season
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          SU=$(echo "${{ inputs.season }}" | tr '-' '_')
+          mkdir -p "data/raw/$SU"
+          gh release download legacy-cl2-v1 \
+            --pattern "legacy_$SU.zip" \
+            --dir /tmp/legacy_bundle
+          unzip -o -q "/tmp/legacy_bundle/legacy_$SU.zip" -d "data/raw/$SU"
+          echo "CL2 files staged: $(find "data/raw/$SU" -name '*.cl2' | wc -l)"
+
+      - name: Parse + ingest (skip scrape/download)
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          PYTHONPATH: "."
+        run: |
+          python run_pipeline.py --season "${{ inputs.season }}" \
+            --skip-scrape --skip-download
