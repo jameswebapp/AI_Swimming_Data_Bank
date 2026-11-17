@@ -681,9 +681,9 @@
     "name": "CAC Zachary Spain Memorial Meet (SCY)",
     "date_range": "Nov 6-8, 2026",
     "season": "2026-2027",
-    "result_pdf_url": null,
-    "result_zip_url": null,
-    "backup_zip_url": null,
+    "result_pdf_url": "https://www.gomotionapp.com/md/UserFiles/Image/QuickUpload/127648890-2026-cac-zachary-spain-meet-results_035803.pdf",
+    "result_zip_url": "https://www.gomotionapp.com/md/UserFiles/Image/QuickUpload/127648889-meet-results-2026-cac-6th-annual-zachary-spain-memorial-me-06nov2026-001_037807.zip",
+    "backup_zip_url": "https://drive.google.com/file/d/1RKtj7jkRqfo9qTxV3g2JMZaOXmdIVcZB/view?usp=sharing",
     "event_file_url": "https://www.gomotionapp.com/md/UserFiles/Image/QuickUpload/meet-events-2026-cac-6th-annual-zachary-spain-memorial-me-06nov2026-001_019871.zip",
     "meet_notice_pdf_url": "https://www.gomotionapp.com/md/UserFiles/Image/QuickUpload/cac-short-course-6th-annual-zachary-spain-memorial-b-slower-swim-meet-november-2026-st-mary-s-rev-3_098650.pdf",
     "all_files": [
@@ -716,6 +716,21 @@
         "label": "psych_sheet (Psych Sheet)",
         "url": "https://www.gomotionapp.com/md/UserFiles/Image/QuickUpload/127648679-2026-zack-spain-psych-sheet-2_083802.pdf",
         "file_type": "pdf"
+      },
+      {
+        "label": "result_pdf (PDF)",
+        "url": "https://www.gomotionapp.com/md/UserFiles/Image/QuickUpload/127648890-2026-cac-zachary-spain-meet-results_035803.pdf",
+        "file_type": "pdf"
+      },
+      {
+        "label": "result_zip (ZIP)",
+        "url": "https://www.gomotionapp.com/md/UserFiles/Image/QuickUpload/127648889-meet-results-2026-cac-6th-annual-zachary-spain-memorial-me-06nov2026-001_037807.zip",
+        "file_type": "zip"
+      },
+      {
+        "label": "backup_zip (Backup)",
+        "url": "https://drive.google.com/file/d/1RKtj7jkRqfo9qTxV3g2JMZaOXmdIVcZB/view?usp=sharing",
+        "file_type": "other"
       }
     ]
   },
@@ -770,6 +785,21 @@
         "label": "signup (Signup)",
         "url": "https://docs.google.com/forms/d/e/1FAIpQLSdc-jz8LbpD2IvZWZ__9pimrZLCZen6jJw5BVbqr37PV8Ey1g/viewform",
         "file_type": "other"
+      },
+      {
+        "label": "warmup (Warmup)",
+        "url": "https://www.gomotionapp.com/md/UserFiles/Image/QuickUpload/127648482-2026-nbac-thanksgiving-meet-warmup-lane-assignments_053418.pdf",
+        "file_type": "pdf"
+      },
+      {
+        "label": "timeline (Timeline)",
+        "url": "https://www.gomotionapp.com/md/UserFiles/Image/QuickUpload/127648684-2026-nbac-thanksgiving-meet---timeline_042018.pdf",
+        "file_type": "pdf"
+      },
+      {
+        "label": "psych_sheet (Psych Sheet)",
+        "url": "https://www.gomotionapp.com/md/UserFiles/Image/QuickUpload/127648679-2026-nbac-thanksgiving-meet---psych-sheet_045000.pdf",
+        "file_type": "pdf"
       }
     ]
   },
@@ -777,9 +807,9 @@
     "name": "ACA Harvest Festival (SCY)",
     "date_range": "Nov 13-15, 2026",
     "season": "2026-2027",
-    "result_pdf_url": null,
-    "result_zip_url": null,
-    "backup_zip_url": null,
+    "result_pdf_url": "https://www.gomotionapp.com/md/UserFiles/Image/QuickUpload/127648890-2026-aca-harvest-festival---results-pdf_065216.pdf",
+    "result_zip_url": "https://www.gomotionapp.com/md/UserFiles/Image/QuickUpload/127648889-meet-results-harvest-festival-2026-13nov2026-001_027765.zip",
+    "backup_zip_url": "https://drive.google.com/file/d/1Dl0rmm1uIXuRsPUqrvRsdVb0DUrSa4R3/view?usp=drive_link",
     "event_file_url": "https://www.gomotionapp.com/md/UserFiles/Image/QuickUpload/2026-10-07-aca-harvest-festival-event-file-version-3_041716.zip",
     "meet_notice_pdf_url": "https://www.gomotionapp.com/md/UserFiles/Image/QuickUpload/2026-harvest-fest-submittal-10-7-26_003784.pdf",
     "all_files": [
@@ -796,6 +826,36 @@
       {
         "label": "signup (Signup)",
         "url": "https://docs.google.com/forms/d/e/1FAIpQLSetzvPj-h7vX_fbSmpwbqsojpFBxBqtEa2Ed489xPQ80EWhSw/viewform",
+        "file_type": "other"
+      },
+      {
+        "label": "warmup (Warmup)",
+        "url": "https://www.gomotionapp.com/md/UserFiles/Image/QuickUpload/127648482-2026-aca-harvest-festival---warm-up-assignments_088697.pdf",
+        "file_type": "pdf"
+      },
+      {
+        "label": "timeline (Timeline)",
+        "url": "https://www.gomotionapp.com/md/UserFiles/Image/QuickUpload/127648684-2026-aca-harvest-festival---timeline-1-_021114.pdf",
+        "file_type": "pdf"
+      },
+      {
+        "label": "psych_sheet (Psych Sheet)",
+        "url": "https://www.gomotionapp.com/md/UserFiles/Image/QuickUpload/127648679-2026-aca-harvest-festival---psych-sheet_073059.pdf",
+        "file_type": "pdf"
+      },
+      {
+        "label": "result_pdf (PDF)",
+        "url": "https://www.gomotionapp.com/md/UserFiles/Image/QuickUpload/127648890-2026-aca-harvest-festival---results-pdf_065216.pdf",
+        "file_type": "pdf"
+      },
+      {
+        "label": "result_zip (ZIP)",
+        "url": "https://www.gomotionapp.com/md/UserFiles/Image/QuickUpload/127648889-meet-results-harvest-festival-2026-13nov2026-001_027765.zip",
+        "file_type": "zip"
+      },
+      {
+        "label": "backup_zip (Backup)",
+        "url": "https://drive.google.com/file/d/1Dl0rmm1uIXuRsPUqrvRsdVb0DUrSa4R3/view?usp=drive_link",
         "file_type": "other"
       }
     ]
@@ -824,6 +884,21 @@
         "label": "signup (Signup)",
         "url": "https://docs.google.com/forms/d/1a7NP3XcZrm-kycG6U0HYfh2jeOpIfyhRVL0wqTLiFm8/viewform?chromeless=1&edit_requested=true",
         "file_type": "other"
+      },
+      {
+        "label": "warmup (Warmup)",
+        "url": "https://www.gomotionapp.com/md/UserFiles/Image/QuickUpload/127648482-mini-meet-warm-ups-sheet---sheet1-1_022093.pdf",
+        "file_type": "pdf"
+      },
+      {
+        "label": "timeline (Timeline)",
+        "url": "https://www.gomotionapp.com/md/UserFiles/Image/QuickUpload/127648684-minisessions11152026_043657.pdf",
+        "file_type": "pdf"
+      },
+      {
+        "label": "psych_sheet (Psych Sheet)",
+        "url": "https://www.gomotionapp.com/md/UserFiles/Image/QuickUpload/127648679-minipsych11152026_034978.pdf",
+        "file_type": "pdf"
       }
     ]
   },
@@ -1204,13 +1279,18 @@
     "result_pdf_url": null,
     "result_zip_url": null,
     "backup_zip_url": null,
-    "event_file_url": null,
+    "event_file_url": "https://meet.usaswimming.org/teamentry/management/295085",
     "meet_notice_pdf_url": "https://www.gomotionapp.com/md/UserFiles/Image/QuickUpload/2027-retriever-classic-meet-announcement-3-_002330.pdf",
     "all_files": [
       {
         "label": "meet_notice_pdf (PDF)",
         "url": "https://www.gomotionapp.com/md/UserFiles/Image/QuickUpload/2027-retriever-classic-meet-announcement-3-_002330.pdf",
         "file_type": "pdf"
+      },
+      {
+        "label": "event_file (OME)",
+        "url": "https://meet.usaswimming.org/teamentry/management/295085",
+        "file_type": "other"
       },
       {
         "label": "signup (Signup)",
